@@ -17,11 +17,8 @@ def check_and_create_folder(path: Path):
     Args:
         path (Path): path of the folder
     """
-    if path.exists() and path.is_dir():
-        return
-    else:
+    if not (path.exists() and path.is_dir()):
         os.makedirs(path, exist_ok=True)
-        return
 
 
 def run_command(command):
@@ -29,9 +26,6 @@ def run_command(command):
 
     Args:
         command (str, seq(str)): A string, or a sequence of program arguments
-
-    Returns:
-        _type_: _description_
     """
     with subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -45,9 +39,9 @@ def run_command(command):
 class MinecraftServer:
     """Represents a Minecraft server file with functionality to manage it"""
 
-    def __init__(self, version: str, type: str, meta_url: str, path=None):
+    def __init__(self, version: str, release_type: str, meta_url: str, path=None):
         self.version = version
-        self.type = type
+        self.type = release_type
         self.meta_url = meta_url
         self._data = None
         self.server_folder = Path(path) or Path("server_versions")
@@ -96,8 +90,8 @@ class MinecraftServer:
 
     def check_java(self):
         """Check if the system has the required java version"""
-        # TODO
         print(run_command(["java", "--version"]))
+        raise NotImplementedError()
 
 
 def get_version_manifest(url: str) -> dict:
@@ -114,7 +108,10 @@ def manifest_extract_meta(manifest: dict, server_folder) -> dict:
     results = {}
     for version in manifest.get("versions", []):
         results[version["id"]] = MinecraftServer(
-            version["id"], version["type"], version["url"], path=server_folder
+            version=version["id"],
+            release_type=version["type"],
+            meta_url=version["url"],
+            path=server_folder,
         )
     latest = manifest.get("latest", {})
     results["latest_release"] = results.get(latest.get("release", None), None)
@@ -124,7 +121,6 @@ def manifest_extract_meta(manifest: dict, server_folder) -> dict:
 
 def update(**kwargs):
     """Get the newest release or snapshot version based on running server"""
-    # TODO
     print(f"{kwargs=}")
     raise NotImplementedError()
 
