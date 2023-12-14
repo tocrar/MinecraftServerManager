@@ -5,74 +5,89 @@ import os
 import subprocess
 import argparse
 
-default_manifest_url = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
-server_command = "java -Xmx1024M -Xms1024M -jar minecraft_server.1.20.4.jar nogui"
-
-java_download_page = "https://adoptium.net/de/temurin/releases/"
+DEFAULT_MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
+SERVER_START_COMMAND = "java -Xmx1024M -Xms1024M -jar minecraft_server.1.20.4.jar nogui"
+JAVA_DOWNLOAD_URL_PAGE = "https://adoptium.net/de/temurin/releases/"
+DEFAULT_SERVER_FOLDER = Path("server_versions")
 
 
 def check_and_create_folder(path: Path):
-    # Check if the path exists and is a folder
+    """Check if a folder exist and if not create it
+
+    Args:
+        path (Path): path of the folder
+    """
     if path.exists() and path.is_dir():
         return
     else:
-        # Create the folder if it doesn't exist
         os.makedirs(path, exist_ok=True)
         return
 
 
 def run_command(command):
-    # Run the command in a new shell
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    """Runs a shell command and returns the output
 
-    # Get the output and error from the command
-    output, error = process.communicate()
+    Args:
+        command (str, seq(str)): A string, or a sequence of program arguments
 
-    # Decode the output and error to make them readable
-    output = output.decode("utf-8")
-    error = error.decode("utf-8")
-
+    Returns:
+        _type_: _description_
+    """
+    with subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ) as process:
+        output, error = process.communicate()
+        output = output.decode("utf-8")
+        error = error.decode("utf-8")
     return output, error
 
 
 class MinecraftServer:
-    def __init__(self, version: str, type: str, meta_url: str):
+    """Represents a Minecraft server file with functionality to manage it"""
+
+    def __init__(self, version: str, type: str, meta_url: str, path=None):
         self.version = version
         self.type = type
         self.meta_url = meta_url
         self._data = None
-        self.server_folder = Path("server_versions")
+        self.server_folder = Path(path) or Path("server_versions")
 
     def __str__(self):
         return f"MinecraftServer({self.version=}, {self.type=})"
 
     @property
     def server_file_path(self):
+        """The file path of the server jar file."""
         return self.server_folder / f"minecraft_server.{self.version}.jar"
 
     @property
     def server_url(self) -> str:
+        """The URL from which the server jar file can be downloaded"""
         if self._data is None:
             self._update_data()
         return self._data.get("downloads", {}).get("server", {}).get("url", "")
 
     @property
     def java_version(self) -> int:
+        """The required Java version for the server"""
         if self._data is None:
             self._update_data()
         return self._data.get("javaVersion", {}).get("majorVersion", -1)
 
     @property
     def minimum_launcher_version(self) -> int:
+        """The minimum launcher version required by the client"""
         if self._data is None:
             self._update_data()
         return self._data.get("minimumLauncherVersion", -1)
 
     def _update_data(self):
+        """Private method to update the server metadata by fetching it from the meta_url"""
         with requests.urlopen(self.meta_url) as request:
             self._data = json.load(request)
 
     def download_server(self):
+        """Downloads the server jar file to the specified server_folder"""
         check_and_create_folder(self.server_folder)
         if not self.server_file_path.exists():
             print("Downloading server files please wait ...")
@@ -80,20 +95,26 @@ class MinecraftServer:
         print("Download done")
 
     def check_java(self):
-        print(run_command(["java", "-version"]))
+        """Check if the system has the required java version"""
+        # TODO
+        print(run_command(["java", "--version"]))
 
 
 def get_version_manifest(url: str) -> dict:
+    """
+    Download the minecraft manifest with the client and server versions
+    """
     with requests.urlopen(url) as request:
         data = json.load(request)
     return data
 
 
-def manifest_extract_meta(manifest: dict) -> dict:
+def manifest_extract_meta(manifest: dict, server_folder) -> dict:
+    """Parse the manifest"""
     results = {}
     for version in manifest.get("versions", []):
         results[version["id"]] = MinecraftServer(
-            version["id"], version["type"], version["url"]
+            version["id"], version["type"], version["url"], path=server_folder
         )
     latest = manifest.get("latest", {})
     results["latest_release"] = results.get(latest.get("release", None), None)
@@ -102,13 +123,17 @@ def manifest_extract_meta(manifest: dict) -> dict:
 
 
 def update(**kwargs):
-    print("Not implemented yet")
+    """Get the newest release or snapshot version based on running server"""
+    # TODO
+    print(f"{kwargs=}")
+    raise NotImplementedError()
 
 
 def download(version, **kwargs):
+    """Command to download a specific server jar"""
     print("downloading manifest")
-    manifest = get_version_manifest(default_manifest_url)
-    versions = manifest_extract_meta(manifest)
+    manifest = get_version_manifest(DEFAULT_MANIFEST_URL)
+    versions = manifest_extract_meta(manifest, kwargs["folder"])
     if version in versions:
         versions[version].download_server()
     else:
@@ -120,7 +145,13 @@ def download(version, **kwargs):
 if __name__ == "__main__":
     # Create the top-level parser
     parser = argparse.ArgumentParser(prog="msm")
-    subparsers = parser.add_subparsers(dest="command", help="sub-command help")
+    parser.add_argument(
+        "--folder",
+        type=str,
+        default=DEFAULT_SERVER_FOLDER,
+        help="Path to the server version folder",
+    )
+    subparsers = parser.add_subparsers(dest="command")
 
     # Create the parser for the "update" command
     parser_update = subparsers.add_parser(
