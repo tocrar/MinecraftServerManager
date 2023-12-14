@@ -1,9 +1,11 @@
 """
-This module provides the MinecraftServer class, designed to manage different aspects of a Minecraft server.
+This module provides the MinecraftServer class, 
+designed to manage different aspects of a Minecraft server.
 
 The MinecraftServer class allows users to interact with specific versions of Minecraft servers. 
 It includes functionality for downloading server files. 
-This module is intended for those who need to programmatically control and manage different Minecraft server instances, 
+This module is intended for those who need to programmatically control 
+and manage different Minecraft server instances, 
 especially for different versions and build types (like release or snapshot).
 """
 
