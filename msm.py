@@ -117,6 +117,16 @@ class MinecraftServer:
         print(run_command(["java", "--version"]))
         raise NotImplementedError()
 
+    def print_info(self):
+        """Prints verbose information about the version"""
+        msg = (
+            f"\tminecraft\n\tversion: {self.version}\n"
+            f"\tjava_version: {self.java_version}\n"
+            f"\tminimum_launcher_version: {self.minimum_launcher_version}\n"
+            f"\tserver_url: {self.server_url}"
+        )
+        print(msg)
+
 
 def get_version_manifest(url: str) -> dict:
     """
@@ -143,19 +153,32 @@ def manifest_extract_meta(manifest: dict, server_folder) -> dict:
     return results
 
 
-def update(**kwargs):
+def cmd_update(**kwargs):
     """Get the newest release or snapshot version based on running server"""
     print(f"{kwargs=}")
     raise NotImplementedError()
 
 
-def download(version, **kwargs):
+def cmd_download(version, **kwargs):
     """Command to download a specific server jar"""
     print("Downloading manifest")
     manifest = get_version_manifest(DEFAULT_MANIFEST_URL)
     versions = manifest_extract_meta(manifest, kwargs["folder"])
     if version in versions:
         versions[version].download_server()
+    else:
+        print(
+            f"{version} is not a valid Version. Try 'latest_release' for the newest stable version"
+        )
+
+
+def cmd_info(version, **kwargs):
+    """Command get information about a version"""
+    print("Downloading manifest")
+    manifest = get_version_manifest(DEFAULT_MANIFEST_URL)
+    versions = manifest_extract_meta(manifest, kwargs["folder"])
+    if version in versions:
+        versions[version].print_info()
     else:
         print(
             f"{version} is not a valid Version. Try 'latest_release' for the newest stable version"
@@ -177,14 +200,21 @@ if __name__ == "__main__":
     parser_update = subparsers.add_parser(
         "update", help="download and install the newest server"
     )
-    parser_update.set_defaults(func=update)
+    parser_update.set_defaults(func=cmd_update)
 
     # Create the parser for the "download" command
     parser_download = subparsers.add_parser(
         "download", help="download a specific server version"
     )
     parser_download.add_argument("version", type=str, help="Version to download")
-    parser_download.set_defaults(func=download)
+    parser_download.set_defaults(func=cmd_download)
+
+    # Create the parser for the "info" command
+    parser_info = subparsers.add_parser(
+        "info", help="info for a specific server version"
+    )
+    parser_info.add_argument("version", type=str, help="Version to get infos on")
+    parser_info.set_defaults(func=cmd_info)
 
     args = parser.parse_args()
 
