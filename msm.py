@@ -33,6 +33,26 @@ def check_and_create_folder(path: Path):
         os.makedirs(path, exist_ok=True)
 
 
+def bytes_with_unit(value, base=10):
+    """Convert bits to a readable format with a unit"""
+    bytes_ = value
+
+    if base == 10:
+        # Decimal units
+        units = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
+        divisor = 1000
+    else:
+        # Binary units
+        units = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]
+        divisor = 1024
+
+    for unit in units:
+        if bytes_ < divisor:
+            return f"{bytes_:.2f} {unit}"
+        bytes_ /= divisor
+    return f"{bytes_:.2f} {units[-1]}"
+
+
 def run_command(command):
     """Runs a shell command and returns the output
 
@@ -84,6 +104,20 @@ class MinecraftServer:
         return self._data.get("downloads", {}).get("server", {}).get("url", "")
 
     @property
+    def server_file_size(self) -> int:
+        """Returns the server file size in bits"""
+        if self._data is None:
+            self._update_data()
+        return self._data.get("downloads", {}).get("server", {}).get("size", "")
+
+    @property
+    def client_file_size(self) -> int:
+        """Returns the client file size in bits"""
+        if self._data is None:
+            self._update_data()
+        return self._data.get("downloads", {}).get("client", {}).get("size", "")
+
+    @property
     def java_version(self) -> int:
         """The required Java version for the server"""
         if self._data is None:
@@ -120,10 +154,15 @@ class MinecraftServer:
     def print_info(self):
         """Prints verbose information about the version"""
         msg = (
-            f"\tminecraft\n\tversion: {self.version}\n"
+            f"\tminecraft\n"
+            f"\tversion: {self.version}\n"
+            f"\ttype: {self.type}\n"
             f"\tjava_version: {self.java_version}\n"
             f"\tminimum_launcher_version: {self.minimum_launcher_version}\n"
-            f"\tserver_url: {self.server_url}"
+            f"\tserver_url: {self.server_url}\n"
+            f"\tserver_file_size: {bytes_with_unit(self.server_file_size)}\n"
+            f"\tclient_file_size: {bytes_with_unit(self.client_file_size)}\n"
+            f"\tmeta_url: {self.meta_url}"
         )
         print(msg)
 
