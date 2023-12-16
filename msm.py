@@ -10,6 +10,7 @@ especially for different versions and build types (like release or snapshot).
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 import urllib.request as requests
@@ -45,6 +46,16 @@ def run_command(command):
         output = output.decode("utf-8")
         error = error.decode("utf-8")
     return output, error
+
+
+def download_progress(block_num, block_size, total_size):
+    """
+    Callback function that prints the download progress.
+    """
+    downloaded = block_num * block_size
+    progress = 100 * downloaded / total_size
+    sys.stdout.write(f"\rDownloading: {progress:.2f}%")
+    sys.stdout.flush()
 
 
 class MinecraftServer:
@@ -96,8 +107,10 @@ class MinecraftServer:
         check_and_create_folder(self.server_folder)
         if not self.server_file_path.exists():
             print("Downloading server files please wait ...")
-            requests.urlretrieve(self.server_url, self.server_file_path)
-        print("Download done")
+            requests.urlretrieve(
+                self.server_url, self.server_file_path, download_progress
+            )
+        print("\nDownload done")
 
     def check_java(self):
         """Check if the system has the required java version"""
