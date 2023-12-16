@@ -106,7 +106,7 @@ class MinecraftServer:
         """Downloads the server jar file to the specified server_folder"""
         check_and_create_folder(self.server_folder)
         if not self.server_file_path.exists():
-            print("Downloading server files please wait ...")
+            print(f"Downloading minecraft_server.{self.version}.jar file...")
             requests.urlretrieve(
                 self.server_url, self.server_file_path, download_progress
             )
@@ -151,7 +151,7 @@ def update(**kwargs):
 
 def download(version, **kwargs):
     """Command to download a specific server jar"""
-    print("downloading manifest")
+    print("Downloading manifest")
     manifest = get_version_manifest(DEFAULT_MANIFEST_URL)
     versions = manifest_extract_meta(manifest, kwargs["folder"])
     if version in versions:
